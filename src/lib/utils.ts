@@ -1,3 +1,5 @@
+import { Device } from "@/types/Device";
+import { Level } from "@/types/Level";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Edge } from "vis-network";
@@ -29,4 +31,159 @@ export const verifyLabelToUpdate = (edge: Edge) => {
   const identifiers2 = edge.to?.toString().split("-") || [""];
 
   if (identifiers.length <= 4 && identifiers2.length <= 4) return true;
+};
+
+export const findAndRemoveDevice = (
+  roots: Device[],
+  id: string,
+  host_last_level: number
+): Device[] => {
+  return roots.map((root) => {
+    if (root.id === id) {
+      console.log("FOUND");
+      return {
+        ...root,
+        devices: [
+          {
+            name: `${host_last_level} Hosts`,
+            id: `${root.id}-host`,
+          },
+        ],
+      }; // Indicate the node was found and modified
+    }
+
+    // If the current node has devices, iterate through them
+    if (root.devices) {
+      const new_devices = findAndRemoveDevice(
+        root.devices,
+        id,
+        host_last_level
+      );
+      return { ...root, devices: new_devices };
+    }
+
+    return root;
+  });
+};
+
+export const findAndAddHost = (
+  roots: Device[],
+  id: string,
+  hosts: number
+): Device[] => {
+  return roots.map((root) => {
+    if (root.id === id) {
+      console.log("FOUND");
+
+      if (id.includes("host")) return { ...root, name: `${hosts} Hosts` };
+
+      return {
+        ...root,
+        hosts,
+        devices: root.devices
+          ? [
+              ...root.devices.filter((d) => d.id !== `${root.id}-host`),
+              {
+                name: `${hosts} Hosts`,
+                id: `${root.id}-host`,
+              },
+            ]
+          : [
+              {
+                name: `${hosts} Hosts`,
+                id: `${root.id}-host`,
+              },
+            ],
+      };
+    }
+    if (root.devices) {
+      const new_devices = findAndAddHost(root.devices, id, hosts);
+      return { ...root, devices: new_devices };
+    }
+
+    return root;
+  });
+};
+
+export const formatDevicesToBackend = (devices: Device[]): Device[] => {
+  return devices.map((device) => {
+    if (device.devices) {
+      const new_devices = formatDevicesToBackend(device.devices);
+
+      const device_host = new_devices.find((d) => d.id.includes("host"));
+
+      if (device_host) {
+        return {
+          ...device,
+          devices: new_devices.filter((d) => d.id !== device_host.id),
+          hosts: Number(device_host.name.split(" ")[0]),
+        };
+      }
+
+      return { ...device, devices: new_devices };
+    }
+
+    return device;
+  });
+};
+
+export const findAndAddDevice = (
+  devices: Device[],
+  id: string,
+  levels: Level[]
+): Device[] => {
+  return devices.map((root) => {
+    if (root.id === id) {
+      console.log("FOUND");
+
+      const segments = root.name.split("-");
+      const root_level = levels.find(
+        (l) => l.name === segments[segments.length - 2]
+      );
+
+      if (!root_level) return root;
+
+      const current_level = levels[levels.indexOf(root_level) + 1];
+
+      const devices_no_host = root.devices?.filter(
+        (d) => !d.id.includes("host")
+      );
+
+      const last_device = devices_no_host ? devices_no_host.pop() : null;
+
+      const name = `${current_level?.name}-${
+        last_device ? Number(last_device.name.split("-")[1]) + 1 : 1
+      }`;
+
+      const new_device = {
+        name: name,
+        id: `${id}-${name}`,
+        devices: [
+          {
+            name: `${levels[levels.length - 1].hosts} Hosts`,
+            id: `${id}-${name}-host`,
+          },
+        ],
+      };
+
+      return {
+        ...root,
+        devices: root.devices
+          ? last_device
+            ? [...root.devices, new_device]
+            : [
+                ...root.devices.filter((d) => !d.id.includes("host")),
+                new_device,
+              ]
+          : [new_device],
+      };
+    }
+
+    if (root.devices) {
+      const new_devices = findAndAddDevice(root.devices, id, levels);
+      return { ...root, devices: new_devices };
+    }
+
+    return root;
+  });
 };

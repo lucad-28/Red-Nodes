@@ -54,14 +54,13 @@ export function EditorLevel({
   });
 
   const onSubmit = async (data: LevelForm) => {
-    console.log(data);
     updateLevels(
-      form.getValues().levels.map((level, index) => {
-        if (index === levels.length - 1)
+      data.levels.map((level, index) => {
+        if (index === levels.length)
           return {
             name: level.name,
             quantity: level.max_quantity,
-            hosts: level.max_hosts,
+            hosts: Number(level.max_hosts),
           };
 
         return {

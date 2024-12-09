@@ -6,5 +6,8 @@ export interface EditorMenuInfo {
     "addConnection"?: () => void;
     "deleteConnection"?: () => void;
     "editConnection"?: () => void;
+    "deleteChildrens"?: () => void;
+    "editHosts"?: () => void;
+    "addChildren"?: () => void;
   };
 }

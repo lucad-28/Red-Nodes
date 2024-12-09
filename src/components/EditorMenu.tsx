@@ -1,4 +1,11 @@
-import { PlusCircle, Trash2, Edit, LucideProps } from "lucide-react";
+import {
+  PlusCircle,
+  Trash2,
+  Edit,
+  LucideProps,
+  TrashIcon,
+  PlusSquareIcon,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,16 +20,22 @@ interface Action {
     Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
   >;
   name: string;
-  id: "editConnection" | "addConnection" | "deleteConnection";
+  id:
+    | "editConnection"
+    | "addConnection"
+    | "deleteConnection"
+    | "deleteChildrens"
+    | "editHosts"
+    | "addChildren";
 }
 
-const connectionActions: Action[] = [
+const actions: Action[] = [
   { icon: Edit, name: "Modificar conexión", id: "editConnection" },
   { icon: Trash2, name: "Eliminar conexión", id: "deleteConnection" },
-];
-
-const deviceActions: Action[] = [
   { icon: PlusCircle, name: "Agregar conexión", id: "addConnection" },
+  { icon: TrashIcon, name: "Eliminar dispositivos", id: "deleteChildrens" },
+  { icon: Edit, name: "Editar hosts", id: "editHosts" },
+  { icon: PlusSquareIcon, name: "Agregar dispositivo", id: "addChildren" },
 ];
 
 export function EditorMenu({ menuEdit }: { menuEdit: EditorMenuInfo }) {
@@ -39,26 +52,26 @@ export function EditorMenu({ menuEdit }: { menuEdit: EditorMenuInfo }) {
           zIndex: 10,
         }}
       >
-        {Array.from(
-          menuEdit.mode === "device" ? deviceActions : connectionActions
-        ).map((action, index) => (
-          <Tooltip key={index}>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={menuEdit.handle[action.id]}
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10"
-              >
-                <action.icon className="h-6 w-6" />
-                <span className="sr-only">{action.name}</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{action.name}</p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
+        {Array.from(actions.filter((action) => menuEdit.handle[action.id])).map(
+          (action, index) => (
+            <Tooltip key={index}>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={menuEdit.handle[action.id]}
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10"
+                >
+                  <action.icon className="h-6 w-6" />
+                  <span className="sr-only">{action.name}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{action.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          )
+        )}
       </div>
     </TooltipProvider>
   );

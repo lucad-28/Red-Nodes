@@ -23,18 +23,16 @@ export function LabelEditor({ labelEdit }: { labelEdit: LabelEditInfo }) {
       }}
       className="flex flex-col gap-y-2"
     >
-      <label className="text-sm text-center">
-        Modificar Velocidad del cable
-      </label>
+      <label className="text-sm text-center">Modificar</label>
       <div className="flex flex-row items-center gap-x-4">
         <Input
           className="w-[70%]"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
         />
-        <h1 className="w-[10%]">Mbps</h1>
+        <h1 className="w-[10%]">{labelEdit.units}</h1>
       </div>
-      <Button onClick={() => labelEdit.onChange(`${label} Mbps`)}>
+      <Button onClick={() => labelEdit.onChange(`${label} ${labelEdit.units}`)}>
         Guardar
       </Button>
       <Button

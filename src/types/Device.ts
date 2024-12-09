@@ -5,6 +5,7 @@ export interface Device {
   height?: number;
   gateway?: string;
   devices?: Device[];
+  hosts?: number;
 }
 
 // MOCKUPS VIEWERVIEW

@@ -4,6 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { Device } from "../types/Device";
 
 const ROUTER_IMG = "https://www.svgrepo.com/show/474393/router.svg";
+const HOST_IMG = "https://cdn-icons-png.flaticon.com/512/3067/3067287.png";
+
+const image_options_host = {
+  shape: "image",
+  image: {
+    selected: HOST_IMG,
+    unselected: HOST_IMG,
+  },
+};
 
 const image_options_router = {
   shape: "image",
@@ -27,12 +36,12 @@ const DEVICE_WIDTH = 70;
 const DEVICE_HEIGHT = 40;
 
 const populateMesuarements = (device: Device): Device => {
-  if (!device.devices) {
+  if (!device.devices || device.devices.length === 0) {
     return { ...device, width: DEVICE_WIDTH, height: DEVICE_HEIGHT };
   }
 
   const devices = device.devices.map((device) => {
-    if (!device.devices) {
+    if (!device.devices || device.devices.length === 0) {
       return {
         ...device,
         width: DEVICE_WIDTH,
@@ -43,7 +52,7 @@ const populateMesuarements = (device: Device): Device => {
     const devices = device.devices.map(populateMesuarements);
     const width =
       devices.reduce((acc, device) => Math.max(acc, device.width!), 0) +
-      DEVICE_WIDTH;
+      2 * DEVICE_WIDTH;
     const height =
       devices.reduce((acc, device) => acc + device.height!, 0) + DEVICE_HEIGHT;
 
@@ -53,7 +62,7 @@ const populateMesuarements = (device: Device): Device => {
     devices.reduce((acc, device) => acc + device.width!, 0) + DEVICE_WIDTH;
   const height =
     devices.reduce((acc, device) => Math.max(acc, device.height!), 0) +
-    DEVICE_HEIGHT;
+    2 * DEVICE_HEIGHT;
 
   return { ...device, devices, width, height };
 };
@@ -222,12 +231,16 @@ export function NodeNetwork({
         const x = next_x;
         const y = next_y;
 
+        const image_options = d_h.name.includes("Host")
+          ? image_options_host
+          : image_options_router;
+
         data_nodes.push({
           id: d_h.id,
           label: d_h.name,
           x,
           y,
-          ...image_options_router,
+          ...image_options,
         });
 
         if (!edges.get().find((e) => e.from === parent.id && e.to === d_h.id)) {
@@ -256,12 +269,15 @@ export function NodeNetwork({
             const y = next_yv;
 
             //console.log(d_v.name, d_v.height, x, y);
+            const image_options = d_v.name.includes("Host")
+              ? image_options_host
+              : image_options_router;
             data_nodes.push({
               id: d_v.id,
               label: d_v.name,
               x,
               y,
-              ...image_options_router,
+              ...image_options,
             });
 
             if (
