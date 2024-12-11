@@ -49,8 +49,12 @@ export function ViewerView({
       if (node) {
         const position = network.getPositions(nodeId); // Posición del nodo en el canvas
         const canvasPosition = network.canvasToDOM(position[nodeId]); // Convertir a coordenadas del DOM
+        const node_id = String(node.id).includes("host")
+          ? `${node.id}s`
+          : String(node.id);
+        const subnet = findNetworkByName(subnets.router, node_id);
 
-        if (String(node.id).includes("host")) {
+        if (node_id && !subnet) {
           const parent = String(node.id).substring(
             0,
             String(node.id).lastIndexOf("-")
@@ -73,8 +77,6 @@ export function ViewerView({
 
           return;
         }
-
-        const subnet = findNetworkByName(subnets.router, String(node.id));
 
         setTooltip({
           children: (
