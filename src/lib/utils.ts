@@ -1,3 +1,4 @@
+import { Router } from "@/types/BackendResponse";
 import { Device } from "@/types/Device";
 import { Level } from "@/types/Level";
 import { clsx, type ClassValue } from "clsx";
@@ -105,7 +106,14 @@ export const findAndAddHost = (
   });
 };
 
-export const formatDevicesToBackend = (devices: Device[]): Device[] => {
+interface DeviceBackend {
+  name: string;
+  id: string;
+  connections?: DeviceBackend[];
+  hosts?: number;
+}
+
+export const formatDevicesToBackend = (devices: Device[]): DeviceBackend[] => {
   return devices.map((device) => {
     if (device.devices) {
       const new_devices = formatDevicesToBackend(device.devices);
@@ -113,17 +121,29 @@ export const formatDevicesToBackend = (devices: Device[]): Device[] => {
       const device_host = new_devices.find((d) => d.id.includes("host"));
 
       if (device_host) {
+        const new_connections = new_devices.filter(
+          (d) => d.id !== device_host.id
+        );
+
+        if (new_connections.length === 0)
+          return {
+            name: device.name,
+            id: device.id,
+            hosts: Number(device_host.name.split(" ")[0]),
+          };
+
         return {
-          ...device,
-          devices: new_devices.filter((d) => d.id !== device_host.id),
+          name: device.name,
+          id: device.id,
+          connections: new_connections,
           hosts: Number(device_host.name.split(" ")[0]),
         };
       }
 
-      return { ...device, devices: new_devices };
+      return { name: device.name, id: device.id, connections: new_devices };
     }
 
-    return device;
+    return { name: device.name, id: device.id, hosts: device.hosts };
   });
 };
 
@@ -187,3 +207,21 @@ export const findAndAddDevice = (
     return root;
   });
 };
+
+export function findNetworkByName(root: Router, targetName: string): string | null {
+  // Verificar si el router actual es el buscado
+  if (root.name === targetName) {
+    return root.segment.network;
+  }
+
+  // Buscar en los hijos recursivamente
+  for (const child of root.children) {
+    const result = findNetworkByName(child, targetName);
+    if (result !== null) {
+      return result;
+    }
+  }
+
+  // Si no se encuentra, retornar null
+  return null;
+}

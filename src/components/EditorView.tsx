@@ -9,7 +9,6 @@ import {
   verifyNodeToConnect,
   findAndRemoveDevice,
   findAndAddHost,
-  formatDevicesToBackend,
   findAndAddDevice,
 } from "../lib/utils";
 import { EditorLevel } from "./EditorLevel";
@@ -19,37 +18,26 @@ import { Button } from "./ui/button";
 import { EditorMenuInfo } from "@/types/EditorMenuInfo";
 import { EditorMenu } from "./EditorMenu";
 
-export function EditorView() {
-  const [devices, setDevices] = useState<Device[]>([
-    {
-      name: "Central",
-      id: "central",
-    },
-  ]);
+export function EditorView({
+  nodes_,
+  edges_,
+  devices,
+  levels,
+  updateLevels,
+  updateDevices,
+  onSubmit,
+}: {
+  nodes_: React.MutableRefObject<DataSet<Node>>;
+  edges_: React.MutableRefObject<DataSet<Edge>>;
+  devices: Device[];
+  levels: Level[];
+  updateLevels: (levels: Level[]) => void;
+  updateDevices: (devices: Device[]) => void;
+  onSubmit: () => Promise<void>;
+}) {
   const customConnectionRef = useRef<Edge | null>(null);
-  const nodes_ = useRef<DataSet<Node>>(new DataSet());
-  const edges_ = useRef<DataSet<Edge>>(new DataSet());
   const [menuEdit, setMenuEdit] = useState<EditorMenuInfo | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditInfo | null>(null);
-  const [levels, setLevels] = useState<Level[]>([
-    {
-      name: "Area",
-      quantity: 2,
-    },
-    {
-      name: "Edificio",
-      quantity: 2,
-    },
-    {
-      name: "Piso",
-      quantity: 4,
-    },
-    {
-      name: "Salon",
-      quantity: 2,
-      hosts: 12,
-    },
-  ]);
 
   useEffect(() => {
     console.log("Levels changed");
@@ -94,7 +82,7 @@ export function EditorView() {
 
     console.log("Building devices");
     console.log("hosts", levels);
-    setDevices(build(levels));
+    updateDevices(build(levels));
   }, [levels]);
 
   const handleClick = (params: {
@@ -142,13 +130,12 @@ export function EditorView() {
             } Hosts`,
             units: "Hosts",
             onChange: (label: string) => {
-              setDevices((devices) =>
-                findAndAddHost(
-                  devices,
-                  String(node.id),
-                  Number(label.split(" ")[0])
-                )
+              const new_devices = findAndAddHost(
+                devices,
+                String(node.id),
+                Number(label.split(" ")[0])
               );
+              updateDevices(new_devices);
               setLabelEdit(null);
             },
             onClose: () => {
@@ -180,14 +167,12 @@ export function EditorView() {
         console.log("DELETE CHILDRENS");
         if (node) {
           console.log("node id to delete childrens", String(node.id));
-          setDevices((devices) =>
-            findAndRemoveDevice(
-              devices,
-              String(node.id),
-              levels[levels.length - 1].hosts ||
-                levels[levels.length - 2].hosts!
-            )
+          const new_devices = findAndRemoveDevice(
+            devices,
+            String(node.id),
+            levels[levels.length - 1].hosts || levels[levels.length - 2].hosts!
           );
+          updateDevices(new_devices);
         }
         setMenuEdit(null);
       };
@@ -197,9 +182,13 @@ export function EditorView() {
         console.log("ADD CHILDREN");
         if (node) {
           console.log("node id to add children", String(node.id));
-          setDevices((devices) =>
-            findAndAddDevice(devices, String(node.id), levels)
+
+          const new_devices = findAndAddDevice(
+            devices,
+            String(node.id),
+            levels
           );
+          updateDevices(new_devices);
         }
         setMenuEdit(null);
       };
@@ -237,7 +226,7 @@ export function EditorView() {
           edges_?.current.add({
             from: new_edge.from,
             to: new_edge.to,
-            label: "100 Mbps",
+            label: "10 metros",
           });
         }
       } else {
@@ -288,7 +277,7 @@ export function EditorView() {
               x: params.pointer.DOM.x,
               y: params.pointer.DOM.y,
               label: edge.label as string,
-              units: "Mbps",
+              units: "metros",
               onChange: (label: string) => {
                 if (edges_.current) {
                   edges_.current.update({
@@ -317,17 +306,7 @@ export function EditorView() {
     }
   };
 
-  const onSubmit = () => {
-    console.log("Dispositivos");
-
-    const formatted = formatDevicesToBackend(devices);
-
-    console.log(formatted);
-    console.log("Connections");
-    console.log(
-      edges_.current.get().filter((e) => !e.to?.toString().includes("host"))
-    );
-  };
+  
 
   return (
     <div className="min-h-screen max-h-screen w-full grid grid-cols-7">
@@ -335,7 +314,7 @@ export function EditorView() {
         <EditorLevel
           levels={levels}
           updateLevels={(levels) => {
-            setLevels(levels);
+            updateLevels(levels);
           }}
         />
         <Button

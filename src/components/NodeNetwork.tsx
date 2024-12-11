@@ -248,7 +248,7 @@ export function NodeNetwork({
             data_edges.push({
               from: parent.id,
               to: d_h.id,
-              label: "100 Mbps",
+              label: "10 metros",
             });
           } else {
             data_edges.push({

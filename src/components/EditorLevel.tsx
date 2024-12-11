@@ -56,7 +56,7 @@ export function EditorLevel({
   const onSubmit = async (data: LevelForm) => {
     updateLevels(
       data.levels.map((level, index) => {
-        if (index === levels.length)
+        if (index === levels.length - 1)
           return {
             name: level.name,
             quantity: level.max_quantity,

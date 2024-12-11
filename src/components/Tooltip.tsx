@@ -17,12 +17,7 @@ export function Tooltip({ tooltip }: { tooltip: TooltipInfo }) {
         zIndex: 1000,
       }}
     >
-      <p>
-        <strong>ID:</strong> {tooltip.id}
-      </p>
-      <p>
-        <strong>Label:</strong> {tooltip.label}
-      </p>
+      {tooltip.children}
     </div>
   );
 }

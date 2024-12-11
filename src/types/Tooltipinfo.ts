@@ -1,6 +1,5 @@
 export interface TooltipInfo {
-  id: number | string;
-  label: string;
+  children: React.ReactNode;
   x: number;
   y: number;
 }
