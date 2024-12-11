@@ -2,6 +2,8 @@ import { Level } from "@/types/Level";
 import { Textarea } from "./ui/textarea";
 import { useState } from "react";
 import { Button } from "./ui/button";
+import { NoiceType } from "@/types/noice";
+import { Noice } from "./Noice";
 
 export function IAChat({
   update,
@@ -9,33 +11,52 @@ export function IAChat({
   update: (levels: Level[], ipbase: string, mask: number) => void;
 }) {
   const [input, setInput] = useState<string>("");
+  const [noice, setNoice] = useState<NoiceType | null>(null);
 
   const onSubmit = async () => {
     if (!input || input.length === 0) return;
-    const res = await fetch("http://127.0.0.1:8000/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt: input }),
-    });
-    const jsonData = await res.json();
-    console.log(jsonData);
-    const correctedData = jsonData
-      .replace(/'/g, '"') // Cambiar comillas simples por dobles
-      .replace(/(\b\w+\b)(?=\s*:)/g, '"$1"'); // Agregar comillas a las claves
 
-    // Convertir a JSON
-    const data = JSON.parse(correctedData);
-    const data_levels =
-      data.red[0].quantity === 1
-        ? data.red
-        : [{ name: "Central", quantity: 1 }, ...data.red];
-    update(data_levels, data.ipbase, data.mask);
+    setNoice({
+      type: "loading",
+      message: "Estoy procesando tu solicitud",
+      styleType: "modal",
+    });
+
+    try {
+      const res = await fetch("https://pf-rtxac.onrender.com/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: input }),
+      });
+      const jsonData = await res.json();
+      console.log(jsonData);
+      const correctedData = jsonData
+        .replace(/'/g, '"') // Cambiar comillas simples por dobles
+        .replace(/(\b\w+\b)(?=\s*:)/g, '"$1"'); // Agregar comillas a las claves
+
+      // Convertir a JSON
+      const data = JSON.parse(correctedData);
+      const data_levels =
+        data.red[0].quantity === 1
+          ? data.red
+          : [{ name: "Central", quantity: 1 }, ...data.red];
+      update(data_levels, data.ipbase, data.mask);
+
+      setNoice(null);
+    } catch {
+      setNoice({
+        type: "error",
+        message: "Algo ha salido mal, vuelve a intentarlo luego",
+        styleType: "modal",
+      });
+    }
   };
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
+      {noice && <Noice noice={noice} />}
       <h1 className="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-800 md:text-5xl lg:text-6xl dark:text-white">
         Bienvenido a{" "}
         <span className="text-blue-600 dark:text-blue-500">NetSplitter</span>{" "}

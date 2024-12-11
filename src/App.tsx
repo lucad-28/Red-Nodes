@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ViewerView } from "./components/ViewerView";
 import { EditorView } from "./components/EditorView";
 import { DataSet } from "vis-data";
@@ -8,6 +8,8 @@ import { IAChat } from "./components/IAChat";
 import { Level } from "./types/Level";
 import { formatDevicesToBackend } from "./lib/utils";
 import { BackendResponse } from "./types/BackendResponse";
+import { NoiceType } from "./types/noice";
+import { Noice } from "./components/Noice";
 
 /*
 [
@@ -45,8 +47,17 @@ const App: React.FC = () => {
   const [ipbase, setIpbase] = useState<string>("");
   const [mask, setMask] = useState<number>();
   const [subnets, setSubnets] = useState<BackendResponse>();
+  const [noice, setNoice] = useState<NoiceType | null>({
+    type: "loading",
+    message: "Configurando algunas cosas",
+  });
 
   const onSubmit = async () => {
+    setNoice({
+      type: "loading",
+      message: "Estoy procesando tu solicitud",
+      styleType: "modal",
+    });
     console.log("Dispositivos");
 
     const formatted_devices = formatDevicesToBackend(devices);
@@ -72,27 +83,77 @@ const App: React.FC = () => {
     console.log("Connections");
     console.log(formatted_connections);
 
-    const res = await fetch("http://127.0.0.1:8000/generar-red", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        red: formatted_devices[0],
-        base_ip: ipbase,
-        mask,
-        table: formatted_connections,
-      }),
-    });
+    try {
+      const res = await fetch("https://pf-rtxac.onrender.com/generar-red", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          red: formatted_devices[0],
+          base_ip: ipbase,
+          mask,
+          table: formatted_connections,
+        }),
+      });
 
-    const data = await res.json();
-    console.log(data);
-    setSubnets(data);
-    setMode("view");
+      if (!res.ok) {
+        throw new Error("Error al contactar con el servidor");
+      }
+
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      console.log(data);
+      setSubnets(data);
+      setMode("view");
+      setNoice(null);
+    } catch (e) {
+      console.error(e);
+      if (e instanceof Error) {
+        setNoice({
+          type: "error",
+          message: e.message,
+          styleType: "modal",
+        });
+        return;
+      }
+
+      setNoice({
+        type: "error",
+        message: "Error al contactar con el servidor",
+        styleType: "modal",
+      });
+    }
   };
+
+  useEffect(() => {
+    const comunicate_api = async () => {
+      try {
+        const res = await fetch("https://pf-rtxac.onrender.com/");
+        if (!res.ok) {
+          throw new Error("Error al contactar con el servidor");
+        }
+
+        setNoice(null);
+      } catch {
+        setNoice({
+          type: "error",
+          message: "Error al contactar con el servidor",
+          styleType: "modal",
+        });
+      }
+    };
+
+    comunicate_api();
+  }, []);
 
   return (
     <div className="relative w-lvw h-lvh">
+      {noice && <Noice noice={noice} />}
       {mode === "ia" ? (
         <IAChat
           update={(levels: Level[], ipbase: string, mask: number) => {
